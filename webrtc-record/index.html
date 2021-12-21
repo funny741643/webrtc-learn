@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>webrtc-record</title>
+    </head>
+    <body>
+        <div>
+            <video autoplay playsinline id="player"></video>
+        </div>
+
+        <div>
+            <button id="record">Start Record</button>
+            <button id="recplay" disabled>Play</button>
+            <button id="download" disabled>Download</button>
+        </div>
+
+        <div>
+            <video playsinline id="recplayer"></video>
+        </div>
+        <script>
+            let videoplay = document.querySelector("video#player");
+
+            let recvideo = document.querySelector("video#recplayer");
+            let btnRecord = document.querySelector("button#record");
+            let btnPlay = document.querySelector("button#recplay");
+            var btnDownload = document.querySelector("button#download");
+
+            let buffer;
+            let mediaRecorder;
+
+            function gotMediaStream(stream) {
+                window.stream = stream;
+                videoplay.srcObject = stream;
+            }
+
+            function handleError(err) {
+                console.log("getUserMedia error:", err);
+            }
+
+            function start() {
+                if (
+                    !navigator.mediaDevices ||
+                    !navigator.mediaDevices.getUserMedia
+                ) {
+                    console.log("getUserMedia is not supported!");
+                    return;
+                } else {
+                    let constraints = {
+                        video: {
+                            width: 640,
+                            height: 480,
+                            frameRate: 15,
+                        },
+                        audio: false,
+                    };
+
+                    navigator.mediaDevices
+                        .getUserMedia(constraints)
+                        .then(gotMediaStream)
+                        .catch(handleError);
+                }
+            }
+
+            start();
+
+            function handleDataAvailable(e) {
+                if (e && e.data && e.data.size > 0) {
+                    buffer.push(e.data);
+                }
+            }
+
+            function startRecord() {
+                buffer = [];
+
+                var options = {
+                    mimeType: "video/webm;codecs=vp8",
+                };
+
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    console.error(`${options.mimeType} is not supported!`);
+                    return;
+                }
+
+                try {
+                    mediaRecorder = new MediaRecorder(window.stream, options);
+                } catch (e) {
+                    console.error("Failed to create MediaRecorder:", e);
+                    return;
+                }
+
+                mediaRecorder.ondataavailable = handleDataAvailable;
+                mediaRecorder.start(10);
+            }
+
+            function startRecplay() {
+                let blob = new Blob(buffer, { type: "video/webm" });
+                recvideo.src = window.URL.createObjectURL(blob);
+                recvideo.srcObject = null;
+                recvideo.controls = true;
+                recvideo.play();
+            }
+
+            function download() {
+                let blob = new Blob(buffer, { type: "video/webm" });
+                let url = window.URL.createObjectURL(blob);
+                let a = document.createElement("a");
+
+                a.href = url;
+                a.style.display = "none";
+                a.download = "aaa.webm";
+                a.click();
+                a.remove();
+            }
+
+            function stopRecord() {
+                mediaRecorder.stop();
+            }
+
+            btnRecord.onclick = () => {
+                if (btnRecord.textContent === "Start Record") {
+                    console.log("开始录制");
+                    startRecord();
+                    btnRecord.textContent = "Stop Record";
+                    btnPlay.disabled = true;
+                    btnDownload.disabled = true;
+                } else {
+                    stopRecord();
+                    btnRecord.textContent = "Start Record";
+                    btnPlay.disabled = false;
+                    btnDownload.disabled = false;
+                }
+            };
+
+            btnPlay.onclick = () => {
+                var blob = new Blob(buffer, { type: "video/webm" });
+                recvideo.src = window.URL.createObjectURL(blob);
+                recvideo.srcObject = null;
+                recvideo.controls = true;
+                recvideo.play();
+            };
+
+            btnDownload.onclick = () => {
+                var blob = new Blob(buffer, { type: "video/webm" });
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement("a");
+
+                a.href = url;
+                a.style.display = "none";
+                a.download = "aaa.webm";
+                a.click();
+            };
+        </script>
+    </body>
+</html>
