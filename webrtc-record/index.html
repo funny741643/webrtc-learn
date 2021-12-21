@@ -12,6 +12,7 @@
         </div>
 
         <div>
+            <button id="start">打开摄像头</button>
             <button id="record">Start Record</button>
             <button id="recplay" disabled>Play</button>
             <button id="download" disabled>Download</button>
@@ -20,10 +21,51 @@
         <div>
             <video playsinline id="recplayer"></video>
         </div>
-        <script>
+        <script type="module">
+            import Record from "./record.js";
             let videoplay = document.querySelector("video#player");
 
             let recvideo = document.querySelector("video#recplayer");
+            let btnStart = document.querySelector("button#start");
+            let btnRecord = document.querySelector("button#record");
+            let btnPlay = document.querySelector("button#recplay");
+            var btnDownload = document.querySelector("button#download");
+
+            let record = new Record();
+
+            btnStart.onclick = async () => {
+                const stream = await record.start();
+                videoplay.srcObject = stream;
+            };
+
+            btnRecord.onclick = () => {
+                if (btnRecord.textContent === "Start Record") {
+                    console.log("开始录制");
+                    record.startRecord();
+                    btnRecord.textContent = "Stop Record";
+                    btnPlay.disabled = true;
+                    btnDownload.disabled = true;
+                } else {
+                    record.stopRecord();
+                    btnRecord.textContent = "Start Record";
+                    btnPlay.disabled = false;
+                    btnDownload.disabled = false;
+                }
+            };
+
+            btnPlay.onclick = () => {
+                record.startRecplay(recvideo);
+            };
+
+            btnDownload.onclick = () => {
+                record.download();
+            };
+        </script>
+        <!-- <script>
+            let videoplay = document.querySelector("video#player");
+
+            let recvideo = document.querySelector("video#recplayer");
+            let btnStart = document.querySelector("button#start");
             let btnRecord = document.querySelector("button#record");
             let btnPlay = document.querySelector("button#recplay");
             var btnDownload = document.querySelector("button#download");
@@ -32,6 +74,7 @@
             let mediaRecorder;
 
             function gotMediaStream(stream) {
+                console.log(stream);
                 window.stream = stream;
                 videoplay.srcObject = stream;
             }
@@ -41,6 +84,7 @@
             }
 
             function start() {
+                // 设备检测
                 if (
                     !navigator.mediaDevices ||
                     !navigator.mediaDevices.getUserMedia
@@ -64,14 +108,14 @@
                 }
             }
 
-            start();
-
+            // 数据可用
             function handleDataAvailable(e) {
                 if (e && e.data && e.data.size > 0) {
                     buffer.push(e.data);
                 }
             }
 
+            // 录制
             function startRecord() {
                 buffer = [];
 
@@ -95,6 +139,7 @@
                 mediaRecorder.start(10);
             }
 
+            // 回放
             function startRecplay() {
                 let blob = new Blob(buffer, { type: "video/webm" });
                 recvideo.src = window.URL.createObjectURL(blob);
@@ -103,6 +148,7 @@
                 recvideo.play();
             }
 
+            // 下载
             function download() {
                 let blob = new Blob(buffer, { type: "video/webm" });
                 let url = window.URL.createObjectURL(blob);
@@ -115,9 +161,14 @@
                 a.remove();
             }
 
+            // 停止录制
             function stopRecord() {
                 mediaRecorder.stop();
             }
+
+            btnStart.onclick = () => {
+                start();
+            };
 
             btnRecord.onclick = () => {
                 if (btnRecord.textContent === "Start Record") {
@@ -135,23 +186,12 @@
             };
 
             btnPlay.onclick = () => {
-                var blob = new Blob(buffer, { type: "video/webm" });
-                recvideo.src = window.URL.createObjectURL(blob);
-                recvideo.srcObject = null;
-                recvideo.controls = true;
-                recvideo.play();
+                startRecplay();
             };
 
             btnDownload.onclick = () => {
-                var blob = new Blob(buffer, { type: "video/webm" });
-                var url = window.URL.createObjectURL(blob);
-                var a = document.createElement("a");
-
-                a.href = url;
-                a.style.display = "none";
-                a.download = "aaa.webm";
-                a.click();
+                download();
             };
-        </script>
+        </script> -->
     </body>
 </html>
